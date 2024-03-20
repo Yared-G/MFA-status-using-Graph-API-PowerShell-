@@ -1,0 +1,11 @@
+Please search PowerShell in your computer search box and open it as an admin then follow the below steps:
+
+Install-Module Microsoft.Graph -AllowClobber -Force
+Install-Module Microsoft.Graph.Beta -AllowClobber -Force
+Connect-Graph -Scopes User.ReadWrite.All, Organization.Read.All
+Connect-MgGraph -Scopes "User.Read.All", "UserAuthenticationMethod.Read.All"
+ 
+
+ Open the attached file and replace the path to export the report then copy and paste all to the PowerShell
+
+
