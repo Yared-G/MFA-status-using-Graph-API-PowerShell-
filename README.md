@@ -1,2 +1,2 @@
-# MFA-status-using-Graph-API-PowerShell-
-Get O365 users MFA status using Graph API PowerShell 
+# MFA-status-report-using-Graph-API-PowerShell-
+Get O365 users' MFA status report using Graph API PowerShell 
