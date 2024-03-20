@@ -1,0 +1,97 @@
+# Connect to Microsoft Graph API
+Connect-MgGraph -Scopes "User.Read.All", "UserAuthenticationMethod.Read.All"
+
+# Create variable for the date stamp
+$LogDate = Get-Date -f yyyyMMddhhmm
+
+# Define CSV file export location variable
+$Csvfile = "C:\Users\Desktop\MFAUsers.csv"
+
+# Get all Azure users using the Microsoft Graph Beta API
+$users = Get-MgBetaUser -All
+
+# Initialize the results array
+$results = @()
+
+# Initialize progress counter
+$counter = 0
+$totalUsers = $users.Count
+
+# Loop through each user account
+foreach ($user in $users) {
+    $counter++
+    
+    # Calculate percentage completion
+    $percentComplete = [math]::Round(($counter / $totalUsers) * 100)
+    
+    # Define progress bar parameters with user principal name
+    $progressParams = @{
+        Activity        = "Processing Users"
+        Status          = "User $($counter) of $totalUsers - $($user.UserPrincipalName) - $percentComplete% Complete"
+        PercentComplete = $percentComplete
+    }
+    
+    Write-Progress @progressParams
+    
+    # Create an object to store user MFA information
+    $myObject = [PSCustomObject]@{
+        DisplayName               = "-"
+        UserPrincipalName         = "-"
+        MFAstatus                 = "Disabled"  # Initialize to "Disabled"
+        Email                     = "-"
+        Fido2                     = "-"
+        MicrosoftAuthenticatorApp = "-"
+        Phone                     = "-"
+        SoftwareOath              = "-"
+        TemporaryAccessPass       = "-"
+        WindowsHelloForBusiness   = "-"
+    }
+
+    $myObject.UserPrincipalName = $user.UserPrincipalName
+    $myObject.DisplayName = $user.DisplayName
+
+    # Check authentication methods for each user
+    $MFAData = Get-MgBetaUserAuthenticationMethod -UserId $user.UserPrincipalName
+
+    foreach ($method in $MFAData) {
+
+        Switch ($method.AdditionalProperties["@odata.type"]) {
+            "#microsoft.graph.emailAuthenticationMethod" {
+                $myObject.Email = $true
+                $myObject.MFAstatus = "Enabled"
+            }
+            "#microsoft.graph.fido2AuthenticationMethod" {
+                $myObject.Fido2 = $true
+                $myObject.MFAstatus = "Enabled"
+            }
+            "#microsoft.graph.microsoftAuthenticatorAuthenticationMethod" {
+                $myObject.MicrosoftAuthenticatorApp = $true
+                $myObject.MFAstatus = "Enabled"
+            }
+            "#microsoft.graph.phoneAuthenticationMethod" {
+                $myObject.Phone = $true
+                $myObject.MFAstatus = "Enabled"
+            }
+            "#microsoft.graph.softwareOathAuthenticationMethod" {
+                $myObject.SoftwareOath = $true
+                $myObject.MFAstatus = "Enabled"
+            }
+            "#microsoft.graph.temporaryAccessPassAuthenticationMethod" {
+                $myObject.TemporaryAccessPass = $true
+                $myObject.MFAstatus = "Enabled"
+            }
+            "#microsoft.graph.windowsHelloForBusinessAuthenticationMethod" {
+                $myObject.WindowsHelloForBusiness = $true
+                $myObject.MFAstatus = "Enabled"
+            }
+        }
+    }
+    
+    # Add user object to results array
+    $results += $myObject
+}
+
+# Export user information to CSV
+$results | Export-Csv -Path $Csvfile -NoTypeInformation -Encoding UTF8
+
+Write-Host "Script completed. Results exported to $Csvfile." -ForegroundColor Cyan
